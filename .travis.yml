@@ -1,34 +1,24 @@
-# Copyright (C) 2019-2020 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-
 env:
   global:
-    - secure: "ehJ5xVSTPxSUYEwKTVkXTi5p8n8L7wrTs6gzUNgem/R5IgdZyFWFfhNESA/DLTqPxdB3Q5gIJj0Vb700wZ6B6RI/OYZ8kvEQp1pKYLJ+1SrZdMA2Dz3w5n11i65Ylj/wOSGxbmN2VYndcAwXY7/TAPOWEo64+gXXcVmlS2jMNgY="
-
+    secure: iwBNcj402PTF9XSDLQ3l0Sge/+SIJt77RCrk9zsdq3DjLTW0pYt+cqs2ZgpB65ITyQ2x2/JKiqtPmrNVEhWXOmGDUHd5YpuomOM+EI6EGQvvF+rHkAJWt8TZL4GsMzICQSWeo1eSx00zGfmoAJIIeE3Y4/xHI66mvNM/944xN1g/I+rpgUFu8+Tb+TxBBhJfPsbrKPP38zzlVVV/L2PXGwP1dCvCh+/aLiOHAEGxhDG5jidMJgxieQlli6e8wMv5SwHRPssjXKatcMd+/Md0NUTZHFaUCRr7+cZZ1Vyx8IF0EFyyjCyzMDxkYptHmuA7Gxf72IWMxvG/ifCjGBMYvnmZjdqAh4u7q05jjFacMka9AvHg97i3Ef0vqTD6M4hx5rL/ur9P1u7VS+nfsQiQZcisMfP5xoYF2F/gak/uZxOLFi/0hXng+BpheJyUJE9frlaM+M08T3VYZyyvl67Gwp+bGemaL0EQ1SX3Z6Dth1UM/KDgpO1S07oy50oZ01ocrbVD8akjg9074FnHjZx3Ccgmt1YJkGM0+QoLeEeVCNL5MMrGZtFvqdG6kb7MDEbdN9lJWCKqqIdWOYpmw/4YlTXSX5RQ1WDdTfp92J2iXAf1VqOK2jlCpKYYqj0NrfPmF0o0fmMd9djDrMHkUrXL3KZ69ajFeF9i/aEHixQSzAs=
 language: java
-
 jdk:
-  - openjdk11
-
+- openjdk11
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
-
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
 addons:
   coverity_scan:
     project:
-      name: "unifiedcontrolsystem/ucs"
-    notification_email: "paul.d.amonson@intel.com"
-    build_command_prepend: ""
-    build_command: "./gradlew compileJava"
+      name: unifiedcontrolsystem/ucs
+    notification_email: paul.d.amonson@intel.com
+    build_command_prepend: "./gradlew --no-daemon clean"
+    build_command: "./gradlew --no-daemon build"
     branch_pattern: coverity_scan
-
 before_install:
-  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+- echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN
+  CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
