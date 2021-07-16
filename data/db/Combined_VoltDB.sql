@@ -3375,10 +3375,16 @@ CREATE PROCEDURE Raw_FRU_Host_Insert AS
     UPSERT INTO Raw_FRU_Host(id, boardSerial, mac, source, doc_timestamp, DbUpdatedTimestamp)
         VALUES(?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
 
--- The parameter is the mac address of the FRU host under consideration
+-- The parameter is the mac address of the FRU host where the dimm is installed
 CREATE PROCEDURE Get_Dimms_on_FRU_Host AS
 SELECT *
 FROM Raw_DIMM
+WHERE mac = ?;
+
+-- The parameter is the mac address of the FRU host under consideration
+CREATE PROCEDURE Get_FRU_Host_by_DIMM_Mac AS
+SELECT *
+FROM Raw_FRU_Host
 WHERE mac = ?;
 
 CREATE PROCEDURE Get_FRU_Hosts AS SELECT * FROM Raw_FRU_Host ORDER BY doc_timestamp;
