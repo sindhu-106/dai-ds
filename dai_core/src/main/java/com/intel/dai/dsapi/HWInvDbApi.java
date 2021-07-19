@@ -56,4 +56,5 @@ public interface HWInvDbApi {
 
     List<FruHost> enumerateFruHosts();
     Map<String, String> getDimmJsonsOnFruHost(String fruHostMac);
+    FruHost getFruHostByMac(String dimmMac);
 }

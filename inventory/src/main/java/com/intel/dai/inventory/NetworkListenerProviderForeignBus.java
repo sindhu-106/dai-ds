@@ -1,15 +1,17 @@
-// Copyright (C) 2019-2020 Intel Corporation
+// Copyright (C) 2019-2021 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 //
 package com.intel.dai.inventory;
 
-import com.intel.dai.dsapi.BootState;
+import com.google.gson.Gson;
+import com.intel.dai.dsapi.pojo.Dimm;
+import com.intel.dai.dsapi.pojo.FruHost;
+import com.intel.dai.exceptions.DataStoreException;
 import com.intel.dai.network_listener.*;
 import com.intel.logging.Logger;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,115 +35,39 @@ public class NetworkListenerProviderForeignBus implements NetworkListenerProvide
      * @param topic The topic or topic associated with this message.
      * @param inventoryJson state change notification as a json string
      * @param config network listener configuration
-     * @return an array of CommonDataFormat entries equivalent to scnJson
-     * @throws NetworkListenerProviderException network listener provider exception
+     * @return always return an empty List<CommonDataFormat> because no postprocessing is necessary
      */
     @Override
     public List<CommonDataFormat> processRawStringData(String topic, String inventoryJson, NetworkListenerConfig config)
             throws NetworkListenerProviderException {
         log_.debug("Kafka data received %s: %s", topic, inventoryJson);
 
-        if(config_ == null)
-            setConfig(config);
-
-        // First start with performing the voltdb update right here
-        // CMC_TODO: Refactor working code into actOnData; actually, it is not worth it
-
-        DatabaseSynchronizer synchronizer = new DatabaseSynchronizer(log_, config_);
+        DatabaseSynchronizer synchronizer = new DatabaseSynchronizer(log_, config);
         switch (topic) {
             case "kafka_dimm":
                 synchronizer.ingestRawDimm(new ImmutablePair<>(topic, inventoryJson));
+                try {
+                    Dimm dimm = gson.fromJson(inventoryJson, Dimm.class);
+                    synchronizer.constructAndIngestNodeInventoryHistory(dimm);
+                } catch (DataStoreException e) {
+                    throw new NetworkListenerProviderException(e.getMessage());
+                }
                 break;
             case "kafka_fru_host":
                 synchronizer.ingestRawFruHost(new ImmutablePair<>(topic, inventoryJson));
+                try {
+                    FruHost fruHost = gson.fromJson(inventoryJson, FruHost.class);
+                    synchronizer.constructAndIngestNodeInventoryHistory(fruHost);
+                } catch (DataStoreException e) {
+                    throw new NetworkListenerProviderException(e.getMessage());
+                }
                 break;
             default:
                 log_.error("Unexpected kafka topic: %s", topic);
                 break;
         }
 
-//        DatabaseSynchronizer ds = new DatabaseSynchronizer(log_, null, config);
-//        long currentTimestamp = currentUTCInNanoseconds();
-//
-//        ForeignHWInvChangeNotification foreignInventoryChangeNotification =
-//                new HWInvNotificationTranslator(log_).toPOJO(scnJson);
-//        if (foreignInventoryChangeNotification == null) {
-//            throw new NetworkListenerProviderException("Cannot extract foreignInventoryChangeNotification");
-//        }
-//
-//        BootState newComponentState = toBootState(foreignInventoryChangeNotification.State);
-//        if (newComponentState == null) {
-//            log_.info("HWI:%n  ignoring unsupported scn notification state: %s",
-//                    foreignInventoryChangeNotification.State);
-//            return new ArrayList<>();
-//        }
-//
-        List<CommonDataFormat> workItems = new ArrayList<>();
-//        for (String foreign: foreignInventoryChangeNotification.Components) {
-//            String location;
-//            try {
-//                location = CommonFunctions.convertForeignToLocation(foreign);  // this fails if translation map is outdated
-//            } catch(ConversionException e) {
-//                location = foreign; // for debugging purpose
-////                throw new NetworkListenerProviderException(
-////                        "Failed to convert the foreign location to a DAI location", e);
-//            }
-//
-//            CommonDataFormat workItem = new CommonDataFormat(
-//                    currentTimestamp,
-//                    location,
-//                    DataType.InventoryChangeEvent);
-//            workItem.setStateChangeEvent(newComponentState);
-//            workItem.storeExtraData(FOREIGN_KEY, foreign);
-//            workItems.add(workItem);
-//        }
-//        log_.info("HWI:%n  Extracted %d work items", workItems.size());
-        return workItems;   // to be consumed by com.intel.dai.network_listener.processMessage()
-    }
-
-    /**
-     * <p> Returns the current time as an UTC time stamp in nanoseconds. </p>
-     * @return current UTC time in nanoseconds
-     */
-    private long currentUTCInNanoseconds() {
-        Instant i = Instant.now();
-        return i.getEpochSecond() * 1000000000L + i.getNano();
-    }
-
-    /**
-     * <p> Converts a foreign component state into BootState.  Unsupported states are represented as null,
-     * and unexpected states cause an exception to be thrown.
-     * HWInvNotificationTranslator guarantees that the input string cannot be null.  Note that none of
-     * the listed component state corresponds obvicously to BootState.NODE_BOOTING. </p>
-     * @param foreignComponentState state in the SCN json
-     * @return a BootState or null
-     * @throws NetworkListenerProviderException network listener provider exception
-     */
-    BootState toBootState(String foreignComponentState)
-            throws NetworkListenerProviderException {
-
-        switch(foreignComponentState) {
-            case "Off":
-                return BootState.NODE_OFFLINE;
-            case "On":
-                return BootState.NODE_ONLINE;
-            case "Unknown":
-            case "Empty":
-            case "Populated":
-            case "Active":
-            case "Standby":
-            case "Halt":
-            case "Ready":
-            case "Paused":
-                log_.info("HWI:%n  Unsupported foreign component state: %s",
-                        foreignComponentState);
-                return null;
-            default:
-                String msg = String.format("Unexpected foreign component state: %s",
-                        foreignComponentState);
-                log_.error("HWI:%n  %s", msg);
-                throw new NetworkListenerProviderException(msg);
-        }
+        return new ArrayList<>();   // to be consumed by com.intel.dai.network_listener.processMessage()
     }
 
     /**
@@ -153,35 +79,8 @@ public class NetworkListenerProviderForeignBus implements NetworkListenerProvide
      */
     @Override
     public void actOnData(CommonDataFormat workItem, NetworkListenerConfig config, SystemActions systemActions) {
-        if(config_ == null)
-            setConfig(config);
-
-        // Enqueue inventory json into a voltdb table so that a dedicated thread can consume them.
-        // This means that inventory loading thread cannot shutdown by itself.  Use an interrupt
-        // to shut the thread down.
-
-//        BootState bootState = workItem.getStateEvent();
-//        if (!isSupportedInventoryEvents(bootState)) {
-//            log_.debug("Unsupported boot state=%d", bootState);
-//            return;
-//        }
-//
-//        log_.info("Starting InventoryUpdateThread ...");
-//        Thread t = new Thread(new InventoryUpdateThread(log_, config));
-//        t.start();  // background update of inventory
-    }
-
-    private boolean isSupportedInventoryEvents(BootState bootState) {
-        return bootState == BootState.NODE_ONLINE || bootState == BootState.NODE_OFFLINE;
-    }
-
-    private void setConfig(NetworkListenerConfig config) {
-        config_ = config;
-        // System actions no longer used because the DB update code needs to run before
-        // system actions are available.
     }
 
     private final Logger log_;
-    private NetworkListenerConfig config_ = null;
-    private final static String FOREIGN_KEY = "foreignLocationKey";
+    private final static Gson gson = new Gson();
 }

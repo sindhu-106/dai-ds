@@ -559,6 +559,34 @@ public class VoltHWInvDbApi implements HWInvDbApi {
         return null;
     }
 
+    public FruHost getFruHostByMac(String dimmMac) {
+        try {
+            ClientResponse cr = client.callProcedure("Get_FRU_Host_by_DIMM_Mac", dimmMac);
+            if (cr.getStatus() != ClientResponse.SUCCESS) {
+                logger.error(cr.getStatusString());
+                return null;
+            }
+            VoltTable tuples = cr.getResults()[0];
+            int numberFruHostByMac = tuples.getRowCount();
+            if (numberFruHostByMac != 1) {
+                logger.error("Expected 1 FRU host associated with %s but has %d", dimmMac, numberFruHostByMac);
+                return null;
+            }
+            tuples.resetRowPosition();
+            if (tuples.advanceRow()) {
+                String id = tuples.getString(0);
+                String source = tuples.getString(3);
+                long docTimestamp = tuples.getLong(4);
+                logger.debug("id: %s, docTimestamp: %d, source: %s", id, docTimestamp, source);
+                return gson.fromJson(source, FruHost.class);
+            }
+            return null;
+        } catch (IOException | ProcCallException e) {
+            logger.error(e.getMessage());
+        }
+        return null;
+    }
+
     private final static Gson gson = new Gson();
     private final Logger logger;
     private final String[] servers;

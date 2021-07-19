@@ -21,7 +21,7 @@ import com.intel.properties.PropertyMap;
 import java.util.List;
 import java.util.Map;
 
-public class NodeInventoryIngester {
+public class RawNodeInventoryIngester {
     private final Logger log_;
     protected HWInvDbApi onlineInventoryDatabaseClient_;                // voltdb
     protected InventoryTrackingApi inventoryApi_;
@@ -29,7 +29,7 @@ public class NodeInventoryIngester {
     private final static Gson gson = new Gson();
     private long numberNodeInventoryJsonIngested = 0;
 
-    public NodeInventoryIngester(DataStoreFactory factory, Logger log) {
+    public RawNodeInventoryIngester(DataStoreFactory factory, Logger log) {
         log_ = log;
         onlineInventoryDatabaseClient_ = factory.createHWInvApi();
         onlineInventoryDatabaseClient_.initialize();
@@ -37,7 +37,17 @@ public class NodeInventoryIngester {
         jsonParser = ConfigIOFactory.getInstance("json");
     }
 
-    String constructAndIngestNodeInventoryJson(FruHost fruHost) throws DataStoreException {
+    public void constructAndIngestNodeInventoryJson(Dimm dimm) throws DataStoreException {
+        log_.info("Constructing node inventory from %s", dimm.serial);
+        FruHost fruHost = onlineInventoryDatabaseClient_.getFruHostByMac(dimm.mac);
+        if (fruHost == null) {
+            log_.error("fruHost is null");
+            return;
+        }
+        constructAndIngestNodeInventoryJson(fruHost);
+    }
+
+    public void constructAndIngestNodeInventoryJson(FruHost fruHost) throws DataStoreException {
         log_.info("Constructing node inventory from %s", fruHost.hostname);
         NodeInventory nodeInventory = new NodeInventory(fruHost);
 
@@ -48,29 +58,33 @@ public class NodeInventoryIngester {
             String hostname = fruHost.hostname;
             long doc_timestamp = fruHost.timestamp; // epoch seconds
 
-
-            long sizeMB = 0L;
-            String serial = "";
-            try {
-                PropertyMap dimm = jsonParser.fromString(dimmJson).getAsMap();
-                PropertyMap ib_dimm = dimm.getMap("ib_dimm");
-                sizeMB = Long.valueOf(ib_dimm.getString("Size").split(" ")[0]);
-                serial = ib_dimm.getString("Serial Number");
-            } catch (Exception e) {
-                log_.exception(e, "Failed retrieving dimm info from json file.");
-            }
-
-            try {
-                inventoryApi_.addDimm(hostname, hostname + "_" + locator,
-                        "A", sizeMB, locator, null, serial,
-                        doc_timestamp * 1000000L, "INVENTORY", -1);
-            } catch (DataStoreException e) {
-                log_.error(e.getMessage());
-            }
+            migrateInventoryDataToStandardTable(locator, dimmJson, hostname, doc_timestamp);
         }
 
         numberNodeInventoryJsonIngested += onlineInventoryDatabaseClient_.ingest(nodeInventory);
-        return gson.toJson(nodeInventory);
+        String nodeInventoryJson =  gson.toJson(nodeInventory);
+        migrateInventoryDataToStandardTable(fruHost, nodeInventoryJson);
+    }
+
+    private void migrateInventoryDataToStandardTable(String locator, String dimmJson, String hostname, long doc_timestamp) {
+        long sizeMB = 0L;
+        String serial = "";
+        try {
+            PropertyMap dimm = jsonParser.fromString(dimmJson).getAsMap();
+            PropertyMap ib_dimm = dimm.getMap("ib_dimm");
+            sizeMB = Long.valueOf(ib_dimm.getString("Size").split(" ")[0]);
+            serial = ib_dimm.getString("Serial Number");
+        } catch (Exception e) {
+            log_.exception(e, "Failed retrieving dimm info from json file.");
+        }
+
+        try {
+            inventoryApi_.addDimm(hostname, hostname + "_" + locator,
+                    "A", sizeMB, locator, null, serial,
+                    doc_timestamp * 1000000L, "INVENTORY", -1);
+        } catch (DataStoreException e) {
+            log_.error(e.getMessage());
+        }
     }
 
     void addDimmJsonsToFruHostJson(NodeInventory nodeInventory, String locator, String json) {
@@ -140,12 +154,16 @@ public class NodeInventoryIngester {
 
         for (FruHost fruHost : fruHosts) {
             try {
-                String nodeInventoryJson = constructAndIngestNodeInventoryJson(fruHost);
-                inventoryApi_.addFru(fruHost.hostname, fruHost.timestamp * 1000000L, nodeInventoryJson, fruHost.boardSerial, fruHost.rawIbBios);
+                constructAndIngestNodeInventoryJson(fruHost);
             } catch (DataStoreException e) {
                 log_.error("DataStoreException: %s", e.getMessage());
             }
         }
+    }
+
+    private void migrateInventoryDataToStandardTable(FruHost fruHost, String nodeInventoryJson) throws DataStoreException {
+        inventoryApi_.addFru(fruHost.hostname, fruHost.timestamp * 1000000L,
+                nodeInventoryJson, fruHost.boardSerial, fruHost.rawIbBios);
     }
 
     public long getNumberNodeInventoryJsonIngested() {

@@ -1,12 +1,14 @@
 package com.intel.dai.inventory;
 
 import com.intel.dai.dsapi.*;
+import com.intel.dai.dsapi.pojo.Dimm;
+import com.intel.dai.dsapi.pojo.FruHost;
 import com.intel.dai.dsimpl.voltdb.HWInvUtilImpl;
 import com.intel.dai.exceptions.DataStoreException;
 import com.intel.dai.inventory.api.database.RawInventoryDataIngester;
 import com.intel.dai.inventory.api.es.Elasticsearch;
 import com.intel.dai.inventory.api.es.ElasticsearchIndexIngester;
-import com.intel.dai.inventory.api.es.NodeInventoryIngester;
+import com.intel.dai.inventory.api.es.RawNodeInventoryIngester;
 import com.intel.dai.network_listener.NetworkListenerConfig;
 import com.intel.logging.Logger;
 import com.intel.properties.PropertyMap;
@@ -28,6 +30,8 @@ public class DatabaseSynchronizer {
     protected HWInvDbApi onlineInventoryDatabaseClient_;                // voltdb
     protected ForeignInventoryClient foreignInventoryDatabaseClient_;   // foreign inventory server
     InventorySnapshot nearLineInventoryDatabaseClient_;                 // postgres
+    RawNodeInventoryIngester rawNodeInventoryIngester;
+
     long totalNumberOfInjectedDocuments = 0;                            // for testing only
     ImmutablePair<Long, String> characteristicsOfLastRawDimmIngested;
     ImmutablePair<Long, String> characteristicsOfLastRawFruHostIngested;
@@ -47,6 +51,7 @@ public class DatabaseSynchronizer {
             log_.error("ProviderInventoryNetworkForeignBus.getDataStoreFactory() => null");
             return;
         }
+        rawNodeInventoryIngester = new RawNodeInventoryIngester(factory_, log_);
 
         PropertyMap configMap = config.getProviderConfigurationFromClassName(getClass().getCanonicalName());
         if (configMap != null) {
@@ -113,10 +118,9 @@ public class DatabaseSynchronizer {
                 sleepForOneSecond();
                 waitForDataMoverToFinish();
 
-                NodeInventoryIngester ni = new NodeInventoryIngester(factory_, log_);
-                ni.ingestInitialNodeInventoryHistory();
-                totalNumberOfInjectedDocuments += ni.getNumberNodeInventoryJsonIngested();
-                log_.info("Number of Raw_Node_Inventory_History documents = %d", ni.getNumberNodeInventoryJsonIngested());
+                rawNodeInventoryIngester.ingestInitialNodeInventoryHistory();
+                totalNumberOfInjectedDocuments += rawNodeInventoryIngester.getNumberNodeInventoryJsonIngested();
+                log_.info("Number of Raw_Node_Inventory_History documents = %d", rawNodeInventoryIngester.getNumberNodeInventoryJsonIngested());
                 return;
             }
             log_.info("areEmptyInventoryTablesInPostgres() => false");
@@ -129,10 +133,20 @@ public class DatabaseSynchronizer {
 
     void ingestRawDimm(ImmutablePair<String, String> doc) {
         RawInventoryDataIngester.ingestDimm(doc);
+        RawInventoryDataIngester.waitForRawDimmToAppearInNearLine(doc);
     }
 
     void ingestRawFruHost(ImmutablePair<String, String> doc) {
         RawInventoryDataIngester.ingestFruHost(doc);
+        RawInventoryDataIngester.waitForRawFruHostToAppearInNearLine(doc);
+    }
+
+    void constructAndIngestNodeInventoryHistory(Dimm dimm) throws DataStoreException {
+        rawNodeInventoryIngester.constructAndIngestNodeInventoryJson(dimm);
+    }
+
+    void constructAndIngestNodeInventoryHistory(FruHost fruHost) throws DataStoreException {
+        rawNodeInventoryIngester.constructAndIngestNodeInventoryJson(fruHost);
     }
 
     private ImmutablePair<Long, String> ingest(RestHighLevelClient esClient, String index) throws DataStoreException {
@@ -199,7 +213,7 @@ public class DatabaseSynchronizer {
     }
 
     /**
-     * InterruptedExeptions are ignored.
+     * InterruptedExceptions are ignored.
      * @return sleepLength
      */
     private long sleepForOneSecond() {

@@ -11,8 +11,6 @@ import com.intel.dai.network_listener.NetworkListenerConfig;
 import com.intel.dai.network_listener.NetworkListenerCore;
 import com.intel.logging.Logger;
 import com.intel.perflogging.BenchmarkHelper;
-import com.intel.properties.PropertyMap;
-import com.intel.properties.PropertyNotExpectedType;
 import com.intel.xdg.XdgConfigFile;
 
 import java.io.FileNotFoundException;

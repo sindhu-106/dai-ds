@@ -77,8 +77,8 @@ class ElasticsearchIndexIngesterITSpec extends Specification {
 }
 
 
-class NodeInventoryIngesterITSpec extends Specification {
-    NodeInventoryIngester ts
+class RawNodeInventoryIngesterITSpec extends Specification {
+    RawNodeInventoryIngester ts
     HWInvUtil util = new HWInvUtilImpl(Mock(Logger))
     Logger logger = Mock(Logger)
     DataStoreFactory dsClientFactory = Mock(DataStoreFactory)
@@ -91,7 +91,7 @@ class NodeInventoryIngesterITSpec extends Specification {
         dsClientFactory.createHWInvApi() >> new VoltHWInvDbApi(logger, util, servers)
         dsClientFactory.createInventoryTrackingApi() >> Mock(InventoryTrackingApi)
 
-        ts = new NodeInventoryIngester(dsClientFactory, logger)
+        ts = new RawNodeInventoryIngester(dsClientFactory, logger)
 
         def es = new Elasticsearch(logger)
         def esClient = es.getRestHighLevelClient("cmcheung-centos-7.ra.intel.com", 9200,
@@ -109,8 +109,8 @@ class NodeInventoryIngesterITSpec extends Specification {
         println Helper.testEndMessage(specificationContext)
     }
 
-//    def "NodeInventoryIngester constructor - positive"() {
-//        expect: new NodeInventoryIngester(dsClientFactory, logger) != null
+//    def "RawNodeInventoryIngester constructor - positive"() {
+//        expect: new RawNodeInventoryIngester(dsClientFactory, logger) != null
 //    }
 
 //    def "ingestInitialNodeInventoryHistory - positive"() {

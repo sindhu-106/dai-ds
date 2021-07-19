@@ -10,10 +10,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class RawInventoryDataIngester {
     private static Logger log_;
-    private static DataStoreFactory factory_;
 
     private final static Gson gson = new Gson();
-    private static long totalNumberOfDocumentsEnumerated = 0;
     private static long totalNumberOfDocumentsIngested = 0;
     protected static HWInvDbApi onlineInventoryDatabaseClient_;                // voltdb
 
@@ -24,7 +22,6 @@ public class RawInventoryDataIngester {
 
     public static void initialize(DataStoreFactory factory, Logger logger) {
         logger.info(">> initialize()");
-        factory_ = factory;
         log_ = logger;
         onlineInventoryDatabaseClient_ = factory.createHWInvApi();
         onlineInventoryDatabaseClient_.initialize();
@@ -81,5 +78,32 @@ public class RawInventoryDataIngester {
         } catch (DataStoreException e) {
             log_.error("DataStoreException: %s", e.getMessage());
         }
+    }
+
+    public static void waitForRawDimmToAppearInNearLine(ImmutablePair<String, String> doc) {
+        log_.debug("id: %s, source: %s", doc.left, doc.right);
+        try {
+            Thread.sleep(1000); //CMC_TODO: Implement this in phase 2
+        } catch (InterruptedException e) {
+            log_.info("InterruptedException ignored");
+        }
+    }
+
+    public static void waitForRawFruHostToAppearInNearLine(ImmutablePair<String, String> doc) {
+        log_.debug("id: %s, source: %s", doc.left, doc.right);
+        try {
+            Thread.sleep(1000); //CMC_TODO: Implement this in phase 2
+        } catch (InterruptedException e) {
+            log_.info("InterruptedException ignored");
+        }
+    }
+
+    public static ImmutablePair<Long, String> getCharacteristicsOfLastDocIngested() {
+        log_.debug("Last ingested index: %s", LastIdIngested);
+        return new ImmutablePair<>(lastDocTimestampIngested, lastKeyIngested);
+    }
+
+    public static long getTotalNumberOfDocumentsIngested() {
+        return totalNumberOfDocumentsIngested;
     }
 }
