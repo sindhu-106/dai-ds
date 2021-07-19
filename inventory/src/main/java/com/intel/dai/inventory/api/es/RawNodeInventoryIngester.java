@@ -58,15 +58,15 @@ public class RawNodeInventoryIngester {
             String hostname = fruHost.hostname;
             long doc_timestamp = fruHost.timestamp; // epoch seconds
 
-            migrateInventoryDataToPOTable(locator, dimmJson, hostname, doc_timestamp);
+            migrateInventoryDataToStandardTable(locator, dimmJson, hostname, doc_timestamp);
         }
 
         numberNodeInventoryJsonIngested += onlineInventoryDatabaseClient_.ingest(nodeInventory);
         String nodeInventoryJson =  gson.toJson(nodeInventory);
-        migrateInventoryDataToPOTable(fruHost, nodeInventoryJson);
+        migrateInventoryDataToStandardTable(fruHost, nodeInventoryJson);
     }
 
-    private void migrateInventoryDataToPOTable(String locator, String dimmJson, String hostname, long doc_timestamp) {
+    private void migrateInventoryDataToStandardTable(String locator, String dimmJson, String hostname, long doc_timestamp) {
         long sizeMB = 0L;
         String serial = "";
         try {
@@ -161,7 +161,7 @@ public class RawNodeInventoryIngester {
         }
     }
 
-    private void migrateInventoryDataToPOTable(FruHost fruHost, String nodeInventoryJson) throws DataStoreException {
+    private void migrateInventoryDataToStandardTable(FruHost fruHost, String nodeInventoryJson) throws DataStoreException {
         inventoryApi_.addFru(fruHost.hostname, fruHost.timestamp * 1000000L,
                 nodeInventoryJson, fruHost.boardSerial, fruHost.rawIbBios);
     }
