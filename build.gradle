@@ -712,57 +712,6 @@ project(':ui') {
     }
 }
 
-project(':populate_schema') {
-    apply plugin: 'application'
-    apply plugin: 'groovy'
-
-    dependencies {
-        compile project(':logging')
-        compile project(':properties')
-        compile project(':config_io')
-        compile project(':dai_core')
-        compile group: 'org.postgresql', name: 'postgresql', version: postgres_jdbc_version
-        compileOnly group: 'org.voltdb', name: 'voltdb', version: voltdb_version
-
-        testCompile "org.spockframework:spock-core:${spock_core_version}"
-        testCompile "cglib:cglib-nodep:${cglib_nodep_version}"
-    }
-    project.mainClassName = 'com.intel.dai.populate.OnlineTierDataLoaderApp'
-
-    jar {
-        manifest {
-            attributes(
-                    "Class-Path": configurations.compile.collect { it.getName() }.join(' '),
-                    'Main-Class': project.mainClassName)
-        }
-    }
-
-    jacocoTestCoverageVerification {
-        violationRules {
-            rule {
-                enabled = enforceCodeCoverage
-                limit {
-                    counter = 'METHOD'
-                    minimum = 0.90
-                }
-            }
-            rule {
-                enabled = enforceCodeCoverage
-                limit {
-                    counter = 'BRANCH'
-                    minimum = 0.70
-                }
-            }
-        }
-    }
-
-    distZip.doLast {
-        delete {
-            delete "${buildDir}/distributions/${project.name}-${packageVersion}.zip"
-        }
-    }
-}
-
 project(':dai_network_listener') {
     apply plugin: 'groovy'
 
