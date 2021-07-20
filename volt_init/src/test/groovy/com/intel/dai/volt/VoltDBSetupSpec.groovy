@@ -57,6 +57,7 @@ class VoltDBSetupSpec extends Specification {
         parentClient_ = Mock(Client)
         logger_ = Mock(Logger)
         def sql = "../build/tmp/VoltDB.sql"
+        new File("../build/tmp").mkdirs()
         new File(sql).text = """;"""
         underTest_ = new TestVoltDBSetup("localhost", 3L, "../libs/procedures.jar", sql,
                 "../configurations/eventsim/SystemManifest.json",

@@ -104,6 +104,7 @@ class HPCMEnvelopeProcessing {
     private final List<String> possibleHostNames_ = new ArrayList<>() {{
         add("host");
         add("sw_node_name");
+        add("name");
     }};
     private final List<String> possibleIpNames_ = new ArrayList<>() {{
         add("IP");
