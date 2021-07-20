@@ -493,7 +493,7 @@ extra-xnames:
     - pattern: '^x[0-9]+c[0-9]+w[0-9]+$'
       additional: l[0-%P]
     - pattern: '^x[0-9]+c[0-9]+r[0-9]+$'
-      additional: j[0-%P],j[0-%P]p[0-1]
+      additional: b0,j[0-%P],j[0-%P]p[0-1]
 
 # Network connection information used to communicate with HPCM services.
 hpcm-assigned-services-to-hostnames:
