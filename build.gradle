@@ -1468,146 +1468,6 @@ exit \$?
     }
 }
 
-task makeVoltDBSchemaSetupDeb(type: Deb) {
-    doFirst {
-        new File((String)"${buildDir}/tmp").mkdirs()
-        new File((String)"${buildDir}/tmp/setupVoltDbSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-echo "*** NOTE: This script and referenced collateral must be installed on the same"
-echo "          system that VoltDB is installed on in order to setup VoltDB. VoltDB"
-echo "          requires that SQL files and JAR files be on the same local system."
-echo
-
-which sqlcmd >/dev/null
-if [ \$? -ne 0 ]; then
-  echo "ERROR: Missing 'sqlcmd' application in PATH!" >&2
-  exit 1
-fi
-
-umask 077
-cd ${share_dir}/for_voltdb
-JARS="\$(/bin/ls *.jar | /usr/bin/sort)"
-SQLS="\$(/bin/ls *.sql | /usr/bin/sort)"
-
-for jar in \${JARS}; do
-  fulljar="\$(pwd)/\${jar}"
-  echo "*** Installing JAR Fail: \${fulljar}..."
-  echo "load \${fulljar};" | sqlcmd --servers=127.0.0.1
-done
-
-for sql in \${SQLS}; do
-  fullsql="\$(pwd)/\${sql}"
-  echo "*** Installing SQL File: \${fullsql}..."
-  echo "file \${fullsql};" | sqlcmd --servers=127.0.0.1
-done
-
-exit \$?
-"""
-    }
-    summary = 'The DAI VoltDB Schema Setup installer.'
-    release = "${packageRelease}"
-    version = "${packageVersion}".split("-")[0]
-
-    os = 'LINUX'
-    type = 'BINARY'
-    user = 'root'
-    fileMode = 0600
-    dirMode = 0700
-    packageName = 'dai-volt-schema'
-
-    into("/")
-
-    from("${buildDir}/tmp/setupVoltDbSchema.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Tables.sql","20-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Procedures.sql","40-DAI-Volt-Procedures.sql")
-    }
-    from("${buildDir}/libs/procedures.jar") {
-        into("${share_dir}/for_voltdb")
-        rename("procedures.jar", "99-procedures.jar")
-    }
-}
-
-task makeVoltDBSchemaSetupRpm(type: Rpm) {
-    doFirst {
-        new File((String)"${buildDir}/tmp").mkdirs()
-        new File((String)"${buildDir}/tmp/setupVoltDbSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-echo "*** NOTE: This script and referenced collateral must be installed on the same"
-echo "          system that VoltDB is installed on in order to setup VoltDB. VoltDB"
-echo "          requires that SQL files and JAR files be on the same local system."
-echo
-
-which sqlcmd >/dev/null
-if [ \$? -ne 0 ]; then
-  echo "ERROR: Missing 'sqlcmd' application in PATH!" >&2
-  exit 1
-fi
-
-umask 077
-cd ${share_dir}/for_voltdb
-JARS="\$(/bin/ls *.jar | /usr/bin/sort)"
-SQLS="\$(/bin/ls *.sql | /usr/bin/sort)"
-
-for jar in \${JARS}; do
-  fulljar="\$(pwd)/\${jar}"
-  echo "*** Installing JAR Fail: \${fulljar}..."
-  echo "load \${fulljar};" | sqlcmd --servers=127.0.0.1
-done
-
-for sql in \${SQLS}; do
-  fullsql="\$(pwd)/\${sql}"
-  echo "*** Installing SQL File: \${fullsql}..."
-  echo "file \${fullsql};" | sqlcmd --servers=127.0.0.1
-done
-
-exit \$?
-"""
-    }
-    summary = 'The DAI VoltDB Schema Setup installer.'
-    release = "${packageRelease}"
-    version = "${packageVersion}".split("-")[0]
-
-    os = 'LINUX'
-    type = 'BINARY'
-    user = 'root'
-    fileMode = 0600
-    dirMode = 0700
-    packageName = 'dai-volt-schema'
-
-    into("/")
-
-    from("${buildDir}/tmp/setupVoltDbSchema.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Tables.sql","20-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Procedures.sql","40-DAI-Volt-Procedures.sql")
-    }
-    from("${buildDir}/libs/procedures.jar") {
-        into("${share_dir}/for_voltdb")
-        rename("procedures.jar", "99-procedures.jar")
-    }
-}
-
 task makePostgresSchemaSetupDeb(type: Deb) {
     doFirst {
         new File((String)"${buildDir}/tmp").mkdirs()
@@ -2920,10 +2780,10 @@ task makeAllArtifacts {
         file("${buildDir}/distributions").mkdirs()
     }
     dependsOn subprojects.jar
-    def rpms = [ "make3rdPartyRpm", "makeVoltDBSchemaSetupRpm", "makePostgresSchemaSetupRpm", "makeDaiRpm",
+    def rpms = [ "make3rdPartyRpm", "makePostgresSchemaSetupRpm", "makeDaiRpm",
                  "makeAuroraDaiRpm", "makeEventSimConfigRpm", "makeHw1ConfigRpm", "makeHw2ConfigRpm",
                  "makeHw3ConfigRpm", "makeEventSimServerRpm", "makeEventSimCliRpm", "makeCliRpm" ]
-    def debs = [ "make3rdPartyDeb", "makeVoltDBSchemaSetupDeb", "makePostgresSchemaSetupDeb", "makeDaiDeb",
+    def debs = [ "make3rdPartyDeb", "makePostgresSchemaSetupDeb", "makeDaiDeb",
                  "makeAuroraDaiDeb", "makeEventSimConfigDeb", "makeHw1ConfigDeb", "makeHw2ConfigDeb",
                  "makeHw3ConfigDeb", "makeEventSimServerDeb", "makeEventSimCliDeb", "makeCliDeb" ]
     def cleanup = [ "cleanupDeb" ]
