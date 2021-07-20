@@ -13,14 +13,10 @@ import java.util.List;
  * possible formats are POJO, json string and json file.
  */
 public interface HWInvUtil {
-    HWInvTree toCanonicalPOJO(Path canonicalHWInvPath);
-    HWInvTree toCanonicalPOJO(String canonicalHWInvJson);
     HWInvHistory toCanonicalHistoryPOJO(String canonicalHWInvHistoryJson);
-    String toCanonicalJson(HWInvTree tree);
     String toCanonicalHistoryJson(HWInvHistory history);
     void toFile(String str, String outputFileName) throws IOException;
     String fromFile(Path inputFilePath) throws IOException;
-    List<HWInvLoc> subtract(List<HWInvLoc> list0, List<HWInvLoc> list1);
     String head(String str, int limit);
     void setRemainingNumberOfErrorMessages(int limit);
     void setRemainingNumberOfInfoMessages(int limit);

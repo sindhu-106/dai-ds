@@ -32,38 +32,6 @@ public class HWInvUtilImpl implements HWInvUtil {
     }
 
     @Override
-    public HWInvTree toCanonicalPOJO(Path canonicalHWInvPath) {
-        try {
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(canonicalHWInvPath.toString()),
-                            StandardCharsets.UTF_8));
-            return gson.fromJson(br, HWInvTree.class);
-        } catch (RuntimeException | IOException e) {
-            logger.fatal("GSON parsing error: %s", e.getMessage());
-            return null;
-        }
-    }
-
-    @Override
-    public HWInvTree toCanonicalPOJO(String canonicalHWInvJson) {
-        try {
-            return gson.fromJson(canonicalHWInvJson, HWInvTree.class);
-        } catch (RuntimeException e) {
-            logger.fatal("GSON parsing error: %s", e.getMessage());
-            return null;
-        }
-    }
-
-    @Override
-    public String toCanonicalJson(HWInvTree tree) {
-        Comparator<HWInvLoc> compareByID = Comparator.comparing((HWInvLoc o) -> o.ID);
-        if (tree != null) {
-            tree.locs.sort(compareByID);
-        }
-        return gson.toJson(tree);
-    }
-
-    @Override
     public String toCanonicalHistoryJson(HWInvHistory history) {
         Comparator<HWInvHistoryEvent> compareByID = Comparator.comparing((HWInvHistoryEvent o) -> o.ID);
         if (history != null) {
@@ -95,11 +63,6 @@ public class HWInvUtilImpl implements HWInvUtil {
     @Override
     public String fromFile(Path inputFilePath) throws IOException {
         return Files.readString(inputFilePath, StandardCharsets.UTF_8);
-    }
-
-    @Override
-    public List<HWInvLoc> subtract(List<HWInvLoc> list0, List<HWInvLoc> list1) {
-        return (List<HWInvLoc>) CollectionUtils.subtract(list0, list1);
     }
 
     @Override
