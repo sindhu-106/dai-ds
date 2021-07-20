@@ -1,0 +1,247 @@
+#! /bin/bash
+# Copyright (C) 2021 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+if [[ -z $1 || $1 == "-h" ]]; then
+  echo "Usage: run_tests.sh <configuration file>"
+  exit 1
+fi
+
+if [[ ! -f "$1" ]]; then
+  echo "$1 configuration file not found"
+  exit 1
+fi
+
+# Check if jq is installed
+jq --version
+
+if [[ $? != 0 ]]; then
+  echo "jq is required for these tests"
+  exit 1
+fi
+
+config="$(cat $1)"
+tests_run=0
+
+if [[ $(echo $config | jq .sudo_ssh) == "true" ]]; then
+  sudo_ssh="sudo "
+fi
+
+function dai_ds_installed() {
+  failed=0
+  echo "Health Test $((++tests_run)):  DAI/DS Installed"
+  nodes=$(echo $config | jq -r ".adapters | keys[]")
+  pkg=$(echo $config | jq -r ".package_name")
+  for node in $nodes; do
+    printf "$node : "
+    $sudo_ssh ssh $node rpm -q $pkg
+    if [[ $? != 0 ]]; then
+      echo "FAIL: $pkg is not installed on $node"
+      failed=1
+    fi
+    $sudo_ssh ssh $node zypper if $pkg
+  done
+
+  if [[ $failed == 0 ]]; then
+    echo "PASS"
+    return 0
+  else
+    return $failed
+  fi
+}
+
+function dai_cli_installed() {
+  failed=0
+  echo "Health Test $((++tests_run)):  DAI/DS CLI Installed"
+  nodes=$(echo $config | jq -r ".cli[]")
+  for node in $nodes; do
+    printf "$node : "
+    $sudo_ssh ssh $node rpm -q dai-cli
+    if [[ $? != 0 ]]; then
+      echo "FAIL: dai-cli is not installed on $node"
+      failed=1
+    fi
+    $sudo_ssh ssh $node zypper if dai-cli
+  done
+
+  if [[ $failed == 0 ]]; then
+    echo "PASS"
+    return 0
+  else
+    return $failed
+  fi
+}
+
+function volt_started() {
+  echo "Health Test $((++tests_run)):  Volt Database available"
+  volt_addr=$(echo $config | jq -r ".volt")
+  $sudo_ssh ssh $volt_addr voltadmin status
+  if [[ $? != 0 ]]; then
+    echo "FAIL: volt database at $volt_addr is not running"
+    return 1
+  else
+    echo "PASS"
+  fi
+}
+
+function postgres_connected() {
+  echo "Health Test $((++tests_run)):  PostGres DB available"
+  psql_config="$(echo $config | jq .postgres)"
+  addr="$(echo $psql_config | jq -r .url)"
+  db="$(echo $psql_config | jq -r .db)"
+  port="$(echo $psql_config | jq -r .port)"
+  uname="$(echo $psql_config | jq -r .username)"
+  export PGPASSWORD="$(echo $psql_config | jq -r .password)"
+
+  psql -q -h $addr -p $port -U $uname -d $db -c "select * from tier2_config" >/dev/null
+  if [[ $? != 0 ]]; then
+    echo "FAIL: postgres database at $addr is not working properly"
+    return 1
+  else
+    echo "PASS"
+  fi
+
+}
+
+function adapters_running() {
+  echo "Health Test $((++tests_run)):  Adapters running on nodes"
+  fail=0
+  hosts=$(echo $config | jq -r '.adapters | keys[]')
+  for host in $hosts; do
+    echo "Scanning $host"
+    for adapter in $(echo $config | jq -r --arg host "$host" '.adapters[$host] | unique[]'); do
+      echo "Scanning $adapter"
+      count=$(echo $config | jq --arg host "$host" --arg adapter $adapter \
+        'del ( .adapters[$host][] | select( . != $adapter) ) | .adapters[$host] | length')
+      actual_count=$($sudo_ssh ssh $host sudo show-adapters | grep $adapter | wc -l)
+      if [[ $actual_count != $count ]]; then
+        echo "FAIL: $adapter: 
+            Expected: $count, Actual: $actual_count"
+        fail=1
+      fi
+    done
+  done
+
+  if [[ $fail == 0 ]]; then
+    echo "PASS"
+  fi
+
+  return $fail
+
+}
+
+function cli_works() {
+  echo "Health Test $((++tests_run)): CLI working on nodes"
+  fail=0
+  nodes=$(echo $config | jq -r ".cli[]")
+  if [[ $(echo $config | jq '."display-summary"') == "false" ]]; then
+    devnull="> /dev/null"
+  fi
+  cmd="sudo ucs view system-info --summary"
+  for node in $nodes; do
+    echo "$node :"
+    echo $cmd
+    $sudo_ssh ssh $node $cmd $devnull
+    if [[ $? != 0 ]]; then
+      echo "FAIL: CLI command was not successful"
+      failed=1
+    fi
+  done
+
+  if [[ $failed == 0 ]]; then
+    echo "PASS"
+    return 0
+  else
+    return $failed
+  fi
+}
+
+function rabbitmq_healthy() {
+
+  echo "Health Test $((++tests_run)): RabbitMQ Healthy"
+  fail=0
+  rabbitmq_node=$(echo $config | jq -r ".rabbitmq")
+
+  result=$($sudo_ssh ssh $rabbitmq_node sudo rabbitmqctl list_queues)
+
+  echo "$result"
+
+  if [[ $result == *"DAI-DataMover-Queue"* ]]; then
+    echo "PASS"
+    return 0
+  else
+    echo "FAIL: RabbitMQ was not running or did not contain DAI-DataMover-Queue"
+    return 1
+  fi
+
+}
+
+successes=0
+failures=0
+
+echo ".............Running Tests............"
+
+dai_ds_installed
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+
+dai_cli_installed
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+
+volt_started
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+
+postgres_connected
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+
+adapters_running
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+
+cli_works
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo; echo; echo
+rabbitmq_healthy
+if [[ $? == 0 ]]; then
+  ((successes++))
+else
+  ((failures++))
+fi
+
+echo "..........Tests Complete.........."
+echo "............$successes Succeeded..........."
+echo "............$failures Failed.............."
