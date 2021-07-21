@@ -1,9 +1,25 @@
-# Configuration for Provider Class EnvironmentalProviderForeignBus #
+# Configuration for Provider Class EnvironmentalProviderForeignBus and EnvironmentalProviderHPCM #
 ## Provider full Classname: __com.intel.dai.monitoring.EnvironmentalProviderForeignBus__ ##
+## Provider full Classname: __com.intel.dai.monitoring.EnvironmentalProviderHPCM__ ##
 ## Example: ##
 ```json
 "providerConfigurations": {
     "com.intel.dai.monitoring.EnvironmentalProviderForeignBus": {
+        "publishRawTopic": "ucs_raw_data",
+        "publishAggregatedTopic": "ucs_aggregated_data",
+        "publish": true,
+        "useAggregation": true,
+        "useTimeWindow": false,
+        "windowSize": 25,
+        "useMovingAverage": false,
+        "timeWindowSeconds": 300
+    }
+}
+```
+or
+```json
+"providerConfigurations": {
+    "com.intel.dai.monitoring.EnvironmentalProviderHPCM": {
         "publishRawTopic": "ucs_raw_data",
         "publishAggregatedTopic": "ucs_aggregated_data",
         "publish": true,
