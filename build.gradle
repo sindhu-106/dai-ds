@@ -712,57 +712,6 @@ project(':ui') {
     }
 }
 
-project(':populate_schema') {
-    apply plugin: 'application'
-    apply plugin: 'groovy'
-
-    dependencies {
-        compile project(':logging')
-        compile project(':properties')
-        compile project(':config_io')
-        compile project(':dai_core')
-        compile group: 'org.postgresql', name: 'postgresql', version: postgres_jdbc_version
-        compileOnly group: 'org.voltdb', name: 'voltdb', version: voltdb_version
-
-        testCompile "org.spockframework:spock-core:${spock_core_version}"
-        testCompile "cglib:cglib-nodep:${cglib_nodep_version}"
-    }
-    project.mainClassName = 'com.intel.dai.populate.OnlineTierDataLoaderApp'
-
-    jar {
-        manifest {
-            attributes(
-                    "Class-Path": configurations.compile.collect { it.getName() }.join(' '),
-                    'Main-Class': project.mainClassName)
-        }
-    }
-
-    jacocoTestCoverageVerification {
-        violationRules {
-            rule {
-                enabled = enforceCodeCoverage
-                limit {
-                    counter = 'METHOD'
-                    minimum = 0.90
-                }
-            }
-            rule {
-                enabled = enforceCodeCoverage
-                limit {
-                    counter = 'BRANCH'
-                    minimum = 0.70
-                }
-            }
-        }
-    }
-
-    distZip.doLast {
-        delete {
-            delete "${buildDir}/distributions/${project.name}-${packageVersion}.zip"
-        }
-    }
-}
-
 project(':dai_network_listener') {
     apply plugin: 'groovy'
 
@@ -1263,104 +1212,6 @@ services:
       - "./voltdb/log:/var/voltdb/voltdbroot/log"
     restart: always
 """
-        new File((String)"${buildDir}/tmp/populateSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-HOSTNAME="\$(cat ${etc_dir}/volt.hostname)"
-LOG="/opt/ucs/log/populate_schema.log"
-ARGS="\$(cat ${etc_dir}/volt.ip) /opt/ucs/etc/SystemManifest.json /opt/ucs/etc/MachineConfig.json /opt/ucs/etc/RasEventMetaData.json"
-JAR="/opt/ucs/lib/populate_schema.jar"
-PROPS="-DdaiLoggingLevel=\${DAI_LOGGING_LEVEL}"
-
-umask 077
-
-java \${PROPS} -jar \${JAR} \${ARGS} 2>&1 | tee \${LOG}
-
-exit \$?
-"""
-        new File((String)"${buildDir}/tmp/voltdb-entrypoint.sh").text = """#!/bin/bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-LOGFILE="/var/voltdb/voltdbroot/log/voltdb-startup.log"
-export HOSTNAME="\$(cat ${etc_dir}/volt.hostname)"
-
-function is_running() {
-  voltadmin validate >/dev/null 2>&1
-  return \${?}
-}
-
-function add_jar_file() {
-  sqlcmd --query="load classes \${1};" 2>&1 | tee -a "\${LOGFILE}"
-  return \${?}
-}
-
-function add_sql_file() {
-  sqlcmd <"\${1}" 2>&1 | tee -a "\${LOGFILE}"
-  rv=\${?}
-  [[ \${rv} -ne 0 ]] && echo "exec SetDbSchemaFailed 'Error: Loading SQL file \${1}!'" | sqlcmd 2>&1 | tee -a "\${LOGFILE}"
-  return \${rv}
-}
-
-function wait_for_start() {
-  is_running
-  while [ \${?} -ne 0 ]; do is_running; done
-}
-
-function wait_for_stop() {
-  is_running
-  while [ \${?} -eq 0 ]; do sleep 5; is_running; done
-}
-
-umask 077
-
-[[ -z "\${HTTP_PORT}" ]] && HTTP_PORT=8080
->"\${LOGFILE}"
-
-cd /opt/voltdb/schema
-JARS=\$(ls *.jar | sort)
-echo "*** JAR Manifest:" | tee -a "\${LOGFILE}"
-echo "\${JARS}" | tee -a "\${LOGFILE}"
-
-SQLS=\$(ls *.sql | sort)
-echo "*** SQL Files To Load:" | tee -a "\${LOGFILE}"
-echo "\${SQLS}" | tee -a "\${LOGFILE}"
-cd -
-
-errors=0
-echo "Initializing VoltDB..." | tee -a "\${LOGFILE}"
-voltdb init --force -D /var/voltdb 2>&1 | tee -a "\${LOGFILE}"
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Starting VoltDB..." | tee -a "\${LOGFILE}"
-[[ \${errors} -eq 0 ]] && voltdb start -B -D /var/voltdb --count=1 --http=\${HTTP_PORT} 2>&1 | tee -a "\${LOGFILE}"
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Waiting for VoltDB..." | tee -a "\${LOGFILE}"
-wait_for_start
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Loading jar file classes..." | tee -a "\${LOGFILE}"
-for file in \$JARS; do
-  [[ \${errors} -eq 0 ]] && add_jar_file "/opt/voltdb/schema/\${file}"
-  errors=\$(expr \${errors} + \${?})
-done
-
-echo "*** Loading schema files..."
-for file in \$SQLS; do
-  [[ \$errors -eq 0 ]] && add_sql_file "/opt/voltdb/schema/\${file}"
-  errors=\$(expr \${errors} + \${?})
-done
-
-echo "*** Waiting for VoltDB to finish..."
-[[ \${errors} -eq 0 ]] && wait_for_stop
-errors=\$(expr \${errors} + \${?})
-
-exit \${errors}
-"""
         new File((String)"${buildDir}/tmp/daemon-reload.sh").text = """# Copyright (C) ${thisYear} Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -1412,29 +1263,12 @@ exit \$?
         into("opt/ucs/docker")
     }
     //VoltDB setup
-    from("${buildDir}/tmp/voltdb-entrypoint.sh") {
-        into("opt/ucs/docker/tier1/init.d")
-        fileMode(0700)
-    }
     from("${buildDir}/libs/procedures.jar") {
         into("opt/ucs/docker/tier1/init.d")
         rename("procedures.jar", "99-procedures.jar")
     }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("opt/ucs/docker/tier1/init.d")
-        rename("DAI-Volt-Tables.sql", "10-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("opt/ucs/docker/tier1/init.d")
-        rename("DAI-Volt-Procedures.sql", "50-DAI-Volt-Procedures.sql")
-    }
     from("${buildDir}/tmp/voltdb.yml") {
         into("opt/ucs/docker")
-    }
-    // Populate VoltDB
-    from("${buildDir}/tmp/populateSchema.sh") {
-        into("opt/ucs/docker/tier1/init.d")
-        fileMode(0700)
     }
     // Services
     from("${buildDir}/tmp/dai-postgres.service") {
@@ -1564,104 +1398,6 @@ services:
       - "./voltdb/log:/var/voltdb/voltdbroot/log"
     restart: always
 """
-        new File((String)"${buildDir}/tmp/populateSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-HOSTNAME="\$(cat ${etc_dir}/volt.hostname)"
-LOG="/opt/ucs/log/populate_schema.log"
-ARGS="\$(cat ${etc_dir}/volt.ip) /opt/ucs/etc/SystemManifest.json /opt/ucs/etc/MachineConfig.json /opt/ucs/etc/RasEventMetaData.json"
-JAR="/opt/ucs/lib/populate_schema.jar"
-PROPS="-DdaiLoggingLevel=\${DAI_LOGGING_LEVEL}"
-
-umask 077
-
-java \${PROPS} -jar \${JAR} \${ARGS} 2>&1 | tee \${LOG}
-
-exit \$?
-"""
-        new File((String)"${buildDir}/tmp/voltdb-entrypoint.sh").text = """#!/bin/bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-LOGFILE="/var/voltdb/voltdbroot/log/voltdb-startup.log"
-export HOSTNAME="\$(cat ${etc_dir}/volt.hostname)"
-
-function is_running() {
-  voltadmin validate >/dev/null 2>&1
-  return \${?}
-}
-
-function add_jar_file() {
-  sqlcmd --query="load classes \${1};" 2>&1 | tee -a "\${LOGFILE}"
-  return \${?}
-}
-
-function add_sql_file() {
-  sqlcmd <"\${1}" 2>&1 | tee -a "\${LOGFILE}"
-  rv=\${?}
-  [[ \${rv} -ne 0 ]] && echo "exec SetDbSchemaFailed 'Error: Loading SQL file \${1}!'" | sqlcmd 2>&1 | tee -a "\${LOGFILE}"
-  return \${rv}
-}
-
-function wait_for_start() {
-  is_running
-  while [ \${?} -ne 0 ]; do is_running; done
-}
-
-function wait_for_stop() {
-  is_running
-  while [ \${?} -eq 0 ]; do sleep 5; is_running; done
-}
-
-umask 077
-
-[[ -z "\${HTTP_PORT}" ]] && HTTP_PORT=8080
->"\${LOGFILE}"
-
-cd /opt/voltdb/schema
-JARS=\$(ls *.jar | sort)
-echo "*** JAR Manifest:" | tee -a "\${LOGFILE}"
-echo "\${JARS}" | tee -a "\${LOGFILE}"
-
-SQLS=\$(ls *.sql | sort)
-echo "*** SQL Files To Load:" | tee -a "\${LOGFILE}"
-echo "\${SQLS}" | tee -a "\${LOGFILE}"
-cd -
-
-errors=0
-echo "Initializing VoltDB..." | tee -a "\${LOGFILE}"
-voltdb init --force -D /var/voltdb 2>&1 | tee -a "\${LOGFILE}"
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Starting VoltDB..." | tee -a "\${LOGFILE}"
-[[ \${errors} -eq 0 ]] && voltdb start -B -D /var/voltdb --count=1 --http=\${HTTP_PORT} 2>&1 | tee -a "\${LOGFILE}"
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Waiting for VoltDB..." | tee -a "\${LOGFILE}"
-wait_for_start
-errors=\$(expr \${errors} + \${?})
-
-echo "*** Loading jar file classes..." | tee -a "\${LOGFILE}"
-for file in \$JARS; do
-  [[ \${errors} -eq 0 ]] && add_jar_file "/opt/voltdb/schema/\${file}"
-  errors=\$(expr \${errors} + \${?})
-done
-
-echo "*** Loading schema files..."
-for file in \$SQLS; do
-  [[ \$errors -eq 0 ]] && add_sql_file "/opt/voltdb/schema/\${file}"
-  errors=\$(expr \${errors} + \${?})
-done
-
-echo "*** Waiting for VoltDB to finish..."
-[[ \${errors} -eq 0 ]] && wait_for_stop
-errors=\$(expr \${errors} + \${?})
-
-exit \${errors}
-"""
         new File((String)"${buildDir}/tmp/daemon-reload.sh").text = """# Copyright (C) ${thisYear} Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -1713,29 +1449,12 @@ exit \$?
         into("opt/ucs/docker")
     }
     //VoltDB setup
-    from("${buildDir}/tmp/voltdb-entrypoint.sh") {
-        into("opt/ucs/docker/tier1/init.d")
-        fileMode(0700)
-    }
     from("${buildDir}/libs/procedures.jar") {
         into("opt/ucs/docker/tier1/init.d")
         rename("procedures.jar", "99-procedures.jar")
     }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("opt/ucs/docker/tier1/init.d")
-        rename("DAI-Volt-Tables.sql", "10-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("opt/ucs/docker/tier1/init.d")
-        rename("DAI-Volt-Procedures.sql", "50-DAI-Volt-Procedures.sql")
-    }
     from("${buildDir}/tmp/voltdb.yml") {
         into("opt/ucs/docker")
-    }
-    // Populate VoltDB
-    from("${buildDir}/tmp/populateSchema.sh") {
-        into("opt/ucs/docker/tier1/init.d")
-        fileMode(0700)
     }
     // Services
     from("${buildDir}/tmp/dai-postgres.service") {
@@ -1746,146 +1465,6 @@ exit \$?
     }
     from("${buildDir}/tmp/dai-rabbitmq.service") {
         into("etc/systemd/system")
-    }
-}
-
-task makeVoltDBSchemaSetupDeb(type: Deb) {
-    doFirst {
-        new File((String)"${buildDir}/tmp").mkdirs()
-        new File((String)"${buildDir}/tmp/setupVoltDbSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-echo "*** NOTE: This script and referenced collateral must be installed on the same"
-echo "          system that VoltDB is installed on in order to setup VoltDB. VoltDB"
-echo "          requires that SQL files and JAR files be on the same local system."
-echo
-
-which sqlcmd >/dev/null
-if [ \$? -ne 0 ]; then
-  echo "ERROR: Missing 'sqlcmd' application in PATH!" >&2
-  exit 1
-fi
-
-umask 077
-cd ${share_dir}/for_voltdb
-JARS="\$(/bin/ls *.jar | /usr/bin/sort)"
-SQLS="\$(/bin/ls *.sql | /usr/bin/sort)"
-
-for jar in \${JARS}; do
-  fulljar="\$(pwd)/\${jar}"
-  echo "*** Installing JAR Fail: \${fulljar}..."
-  echo "load \${fulljar};" | sqlcmd --servers=127.0.0.1
-done
-
-for sql in \${SQLS}; do
-  fullsql="\$(pwd)/\${sql}"
-  echo "*** Installing SQL File: \${fullsql}..."
-  echo "file \${fullsql};" | sqlcmd --servers=127.0.0.1
-done
-
-exit \$?
-"""
-    }
-    summary = 'The DAI VoltDB Schema Setup installer.'
-    release = "${packageRelease}"
-    version = "${packageVersion}".split("-")[0]
-
-    os = 'LINUX'
-    type = 'BINARY'
-    user = 'root'
-    fileMode = 0600
-    dirMode = 0700
-    packageName = 'dai-volt-schema'
-
-    into("/")
-
-    from("${buildDir}/tmp/setupVoltDbSchema.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Tables.sql","20-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Procedures.sql","40-DAI-Volt-Procedures.sql")
-    }
-    from("${buildDir}/libs/procedures.jar") {
-        into("${share_dir}/for_voltdb")
-        rename("procedures.jar", "99-procedures.jar")
-    }
-}
-
-task makeVoltDBSchemaSetupRpm(type: Rpm) {
-    doFirst {
-        new File((String)"${buildDir}/tmp").mkdirs()
-        new File((String)"${buildDir}/tmp/setupVoltDbSchema.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-echo "*** NOTE: This script and referenced collateral must be installed on the same"
-echo "          system that VoltDB is installed on in order to setup VoltDB. VoltDB"
-echo "          requires that SQL files and JAR files be on the same local system."
-echo
-
-which sqlcmd >/dev/null
-if [ \$? -ne 0 ]; then
-  echo "ERROR: Missing 'sqlcmd' application in PATH!" >&2
-  exit 1
-fi
-
-umask 077
-cd ${share_dir}/for_voltdb
-JARS="\$(/bin/ls *.jar | /usr/bin/sort)"
-SQLS="\$(/bin/ls *.sql | /usr/bin/sort)"
-
-for jar in \${JARS}; do
-  fulljar="\$(pwd)/\${jar}"
-  echo "*** Installing JAR Fail: \${fulljar}..."
-  echo "load \${fulljar};" | sqlcmd --servers=127.0.0.1
-done
-
-for sql in \${SQLS}; do
-  fullsql="\$(pwd)/\${sql}"
-  echo "*** Installing SQL File: \${fullsql}..."
-  echo "file \${fullsql};" | sqlcmd --servers=127.0.0.1
-done
-
-exit \$?
-"""
-    }
-    summary = 'The DAI VoltDB Schema Setup installer.'
-    release = "${packageRelease}"
-    version = "${packageVersion}".split("-")[0]
-
-    os = 'LINUX'
-    type = 'BINARY'
-    user = 'root'
-    fileMode = 0600
-    dirMode = 0700
-    packageName = 'dai-volt-schema'
-
-    into("/")
-
-    from("${buildDir}/tmp/setupVoltDbSchema.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
-    from("${projectDir}/data/db/DAI-Volt-Tables.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Tables.sql","20-DAI-Volt-Tables.sql")
-    }
-    from("${projectDir}/data/db/DAI-Volt-Procedures.sql") {
-        into("${share_dir}/for_voltdb")
-        rename("DAI-Volt-Procedures.sql","40-DAI-Volt-Procedures.sql")
-    }
-    from("${buildDir}/libs/procedures.jar") {
-        into("${share_dir}/for_voltdb")
-        rename("procedures.jar", "99-procedures.jar")
     }
 }
 
@@ -2070,20 +1649,6 @@ exit \$?
 jps -l | grep "com.intel.dai."
 exit 0
 """
-        new File((String)"${buildDir}/tmp/loadVoltDbInitialData.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-LOG="/opt/ucs/log/populate_schema.log"
-SERVERS="\$(cat ${etc_dir}/volt.ip)"
-ARGS="\${SERVERS} ${etc_dir}/SystemManifest.json ${etc_dir}/MachineConfig.json ${etc_dir}/RasEventMetaData.json"
-JAR="${lib_dir}/populate_schema.jar"
-PROPS="-DdaiLoggingLevel=\${DAI_LOGGING_LEVEL}"
-
-java \${PROPS} -jar \${JAR} \${ARGS} 2>&1 | tee \${LOG}
-
-exit \$?
-"""
         new File((String)"${buildDir}/tmp/initialize-voltdb").text = """#!/usr/bin/env bash
 # Copyright (C) ${thisYear} Intel Corporation
 #
@@ -2133,10 +1698,6 @@ exit \$?
         exclude "**/eventsim.jar"
     }
     // For VoltDB
-    from("${buildDir}/tmp/loadVoltDbInitialData.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
     from("${buildDir}/tmp/initialize-voltdb") {
         into("${bin_dir}")
         fileMode = 0700
@@ -2215,20 +1776,6 @@ exit \$?
 jps -l | grep "com.intel.dai."
 exit 0
 """
-        new File((String)"${buildDir}/tmp/loadVoltDbInitialData.sh").text = """#!/usr/bin/env bash
-# Copyright (C) ${thisYear} Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-LOG="/opt/ucs/log/populate_schema.log"
-SERVERS="\$(cat ${etc_dir}/volt.ip)"
-ARGS="\${SERVERS} ${etc_dir}/SystemManifest.json ${etc_dir}/MachineConfig.json ${etc_dir}/RasEventMetaData.json"
-JAR="${lib_dir}/populate_schema.jar"
-PROPS="-DdaiLoggingLevel=\${DAI_LOGGING_LEVEL}"
-
-java \${PROPS} -jar \${JAR} \${ARGS} 2>&1 | tee \${LOG}
-
-exit \$?
-"""
         new File((String)"${buildDir}/tmp/initialize-voltdb").text = """#!/usr/bin/env bash
 # Copyright (C) ${thisYear} Intel Corporation
 #
@@ -2278,10 +1825,6 @@ exit \$?
         exclude "**/eventsim.jar"
     }
     // For VoltDB
-    from("${buildDir}/tmp/loadVoltDbInitialData.sh") {
-        into("${share_dir}/for_voltdb")
-        fileMode = 0700
-    }
     from("${buildDir}/tmp/initialize-voltdb") {
         into("${bin_dir}")
         fileMode = 0700
@@ -3237,10 +2780,10 @@ task makeAllArtifacts {
         file("${buildDir}/distributions").mkdirs()
     }
     dependsOn subprojects.jar
-    def rpms = [ "make3rdPartyRpm", "makeVoltDBSchemaSetupRpm", "makePostgresSchemaSetupRpm", "makeDaiRpm",
+    def rpms = [ "make3rdPartyRpm", "makePostgresSchemaSetupRpm", "makeDaiRpm",
                  "makeAuroraDaiRpm", "makeEventSimConfigRpm", "makeHw1ConfigRpm", "makeHw2ConfigRpm",
                  "makeHw3ConfigRpm", "makeEventSimServerRpm", "makeEventSimCliRpm", "makeCliRpm" ]
-    def debs = [ "make3rdPartyDeb", "makeVoltDBSchemaSetupDeb", "makePostgresSchemaSetupDeb", "makeDaiDeb",
+    def debs = [ "make3rdPartyDeb", "makePostgresSchemaSetupDeb", "makeDaiDeb",
                  "makeAuroraDaiDeb", "makeEventSimConfigDeb", "makeHw1ConfigDeb", "makeHw2ConfigDeb",
                  "makeHw3ConfigDeb", "makeEventSimServerDeb", "makeEventSimCliDeb", "makeCliDeb" ]
     def cleanup = [ "cleanupDeb" ]
