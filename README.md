@@ -1,4 +1,4 @@
-Github Actions&nbsp;&nbsp;![Main CI](https://github.com/unifiedcontrolsystem/dai-ds/actions/workflows/main.yml/badge.svg)&nbsp;&nbsp;&nbsp;![Python CI](https://github.com/unifiedcontrolsystem/dai-ds/actions/workflows/pytest.yml/badge.svg)
+Github Actions ![Main CI](https://github.com/unifiedcontrolsystem/dai-ds/actions/workflows/main.yml/badge.svg)&nbsp;![Python CI](https://github.com/unifiedcontrolsystem/dai-ds/actions/workflows/pytest.yml/badge.svg)&nbsp;![Analysis](https://github.com/unifiedcontrolsystem/dai-ds/actions/workflows/analysis.yml/badge.svg)
 ====================
 
 What is DAI/DS?
@@ -21,7 +21,6 @@ https://unifiedcontrolsystem.github.io/
 The DAI/DS public GitHub project has been integrated with Travis continuous integration.
 
 All pull requests will be built and tested automatically by Travis.
-<br />
 <br />
 <br />
 
@@ -112,7 +111,6 @@ __NOTE:__ Examine the docker-build/Dockerfile for how it's done for a docker
     ```
 <br />
 <br />
-<br />
 
 Run Requirements and Install Instructions (Deployment)
 =======================================================
@@ -183,7 +181,6 @@ Packages (.rpm files are shown but there are .deb equivelents if enabled in the 
 <li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="**"></a>**</sup>&nbsp;&nbsp;</span>When using Eventsim for trial or testing the EventSim server, EventSim CLI, and EventSim configuration should be installed.</li>
 <li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="***"></a>***</sup>&nbsp</span>These are not installed on DAI-DS systems unless DAI-DS is also on a host with the Postgres or VoltDB databases.</li>
 </ul>
-<br />
 <br />
 <br />
 
@@ -317,7 +314,6 @@ Uninstalling DAI and Third Party Components:
 Since all DAI-DS components are RPMs (or debian packages) use the normal method of uninstallation for your distribution. Please not that all services will be stopped gracefully during uninstallation. Log files will remain in the /opt/ucs.** tree.
 <br />
 <br />
-<br />
 
 Notes When Using Docker Containers:
 ====================================
@@ -334,7 +330,6 @@ Notes When Using Docker Containers:
         ```
 * If you start all services together with one command, expect errors and
   restarts of the dai-manager service until all other services are running and setup.
-<br />
 <br />
 <br />
 
@@ -366,7 +361,6 @@ This document contains information and links to information about issues encount
 * __Where Found in DAI-DS:__ During benchmarking, after inserting 1,000,0000 RAS events in a burst the AdapterRasForeignBus adapter did a query that failed in the described way.
 * __Release Notes:__ [VoltDB Release Notes](https://docs.voltdb.com/ReleaseNotes/) (Section 5 for release 9.1, subsection 5.5)
 * __Mitigation:__ Set the environment variable ___MP_MAX_TOTAL_RESP_SIZE___ to a percentage of the heap. Please read the linked documentation first!
-<br />
 <br />
 <br />
 
