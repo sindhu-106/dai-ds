@@ -17,7 +17,7 @@ class VoltHWInvDbApiSpec extends Specification {
     def setup() {
         VoltDbClient.voltClient = Mock(Client)
         String[] servers = ["localhost"]
-        api = new VoltHWInvDbApi(logger, new HWInvUtilImpl(Mock(Logger)), servers)
+        api = new VoltHWInvDbApi(logger, servers)
     }
 
     def "initialize"() {
