@@ -1034,7 +1034,7 @@ CREATE TABLE public.tier2_nodeinventory_history (
    Lctn                    VarChar(25)       NOT NULL,
    DbUpdatedTimestamp      TIMESTAMP         NOT NULL,
    InventoryTimestamp      TIMESTAMP         NOT NULL,
-   InventoryInfo           VarChar(16384),
+   InventoryInfo           VarChar(70000),
    Sernum                  VarChar(50),
    BiosInfo             VarChar(30000),
    Tier2DbUpdatedTimestamp TIMESTAMP         NOT NULL,

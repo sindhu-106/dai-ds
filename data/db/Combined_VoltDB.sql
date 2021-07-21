@@ -749,7 +749,7 @@ CREATE TABLE NodeInventory_History (
    InventoryTimestamp   TIMESTAMP         NOT NULL,   -- Time the event occurred that resulted in this inventory being changed.
                                                       -- Note: this timestamp is not necessarily the time the change occurred in the database.  Rather it is the time (maybe from a log) that the change actually occurred.
                                                       --       See the DbUpdatedTimestamp field, if you want the time the change was recorded in the database.
-   InventoryInfo        VarChar(65536),               -- Additional inventory details not part of the standard manifest, e.g. part numbers, CPU details (CPU ID, speed, sockets, hyper threads), memory module details (type, size, speed)
+   InventoryInfo        VarChar(70000),               -- Additional inventory details not part of the standard manifest, e.g. part numbers, CPU details (CPU ID, speed, sockets, hyper threads), memory module details (type, size, speed)
    Sernum               VarChar(50),                  -- Identifies the specific hw currently in this location (i.e., Product Serial)
    BiosInfo             VarChar(30000),               -- Json string containing the bios information.
    PRIMARY KEY (Lctn, InventoryTimestamp)
@@ -766,7 +766,7 @@ CREATE TABLE Tier2_NodeInventory_History (
    InventoryTimestamp      TIMESTAMP         NOT NULL,   -- Time the event occurred that resulted in this inventory being changed.
                                                          -- Note: this timestamp is not necessarily the time the change occurred in the database.  Rather it is the time (maybe from a log) that the change actually occurred.
                                                          --       See the DbUpdatedTimestamp field, if you want the time the change was recorded in the database.
-   InventoryInfo           VarChar(65536),               -- Additional inventory details not part of the standard manifest, e.g. part numbers, CPU details (CPU ID, speed, sockets, hyper threads), memory module details (type, size, speed)
+   InventoryInfo           VarChar(70000),               -- Additional inventory details not part of the standard manifest, e.g. part numbers, CPU details (CPU ID, speed, sockets, hyper threads), memory module details (type, size, speed)
    Sernum                  VarChar(50),                  -- Identifies the specific hw currently in this location (i.e., Product Serial)
    BiosInfo                VarChar(30000),               -- Json string containing the bios information.
    Tier2DbUpdatedTimestamp TIMESTAMP         NOT NULL,   -- Time the last change to this record was recorded in the Tier2 database.  It is the actual time that the db update occurred.
