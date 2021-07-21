@@ -186,7 +186,7 @@ public class DataStoreFactoryImpl implements DataStoreFactory {
     }
     @Override
     public HWInvDbApi createHWInvApi() {
-        VoltHWInvDbApi instance = new VoltHWInvDbApi(logger_, new HWInvUtilImpl(logger_), parsedServers);
+        VoltHWInvDbApi instance = new VoltHWInvDbApi(logger_, parsedServers);
         instance.initialize();
         return instance;
     }

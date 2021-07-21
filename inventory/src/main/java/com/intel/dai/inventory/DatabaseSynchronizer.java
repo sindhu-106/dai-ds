@@ -2,11 +2,9 @@ package com.intel.dai.inventory;
 
 import com.intel.dai.dsapi.DataStoreFactory;
 import com.intel.dai.dsapi.HWInvDbApi;
-import com.intel.dai.dsapi.HWInvUtil;
 import com.intel.dai.dsapi.InventorySnapshot;
 import com.intel.dai.dsapi.pojo.Dimm;
 import com.intel.dai.dsapi.pojo.FruHost;
-import com.intel.dai.dsimpl.voltdb.HWInvUtilImpl;
 import com.intel.dai.exceptions.DataStoreException;
 import com.intel.dai.inventory.api.database.RawInventoryDataIngester;
 import com.intel.dai.inventory.api.es.Elasticsearch;
@@ -27,7 +25,6 @@ import java.util.Objects;
 public class DatabaseSynchronizer {
     private final Logger log_;
     private final DataStoreFactory factory_;
-    protected HWInvUtil util_;
     protected HWInvDbApi onlineInventoryDatabaseClient_;                // voltdb
     InventorySnapshot nearLineInventoryDatabaseClient_;                 // postgres
     RawNodeInventoryIngester rawNodeInventoryIngester;
@@ -204,8 +201,6 @@ public class DatabaseSynchronizer {
     }
 
     private void initializeDependencies() {
-        util_ = new HWInvUtilImpl(log_);
-
         onlineInventoryDatabaseClient_ = factory_.createHWInvApi();
         nearLineInventoryDatabaseClient_ = factory_.createInventorySnapshotApi();
     }

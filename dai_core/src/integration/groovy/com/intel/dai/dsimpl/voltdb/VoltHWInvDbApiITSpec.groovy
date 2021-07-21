@@ -1,6 +1,5 @@
 package com.intel.dai.dsimpl.voltdb
 
-import com.intel.dai.dsapi.HWInvUtil
 import com.intel.dai.dsapi.pojo.Dimm
 import com.intel.dai.dsapi.pojo.FruHost
 import com.intel.dai.dsapi.pojo.NodeInventory
@@ -11,11 +10,10 @@ class VoltHWInvDbApiITSpec extends Specification {
     VoltHWInvDbApi ts
 
     Logger logger = Mock Logger
-    HWInvUtil util = new HWInvUtilImpl(logger)
     String[] voltDbServers = ['css-centos-8-00.ra.intel.com']
 
     def setup() {
-        ts = new VoltHWInvDbApi(logger, util, voltDbServers)
+        ts = new VoltHWInvDbApi(logger, voltDbServers)
         ts.initialize()
     }
 

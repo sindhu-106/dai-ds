@@ -6,9 +6,8 @@
 package com.intel.dai.inventory.api.es
 
 import com.intel.dai.dsapi.DataStoreFactory
-import com.intel.dai.dsapi.HWInvUtil
 import com.intel.dai.dsapi.InventoryTrackingApi
-import com.intel.dai.dsimpl.voltdb.HWInvUtilImpl
+
 import com.intel.dai.dsimpl.voltdb.VoltHWInvDbApi
 import com.intel.dai.exceptions.DataStoreException
 import com.intel.dai.inventory.utilities.Helper
@@ -21,7 +20,6 @@ class ElasticsearchIndexIngesterITSpec extends Specification {
     Elasticsearch es = new Elasticsearch(logger)
     RestHighLevelClient esClient
     ElasticsearchIndexIngester ts
-    HWInvUtil util = new HWInvUtilImpl(Mock(Logger))
     DataStoreFactory dsClientFactory = Mock(DataStoreFactory)
     String[] voltDbServers = ['css-centos-8-00.ra.intel.com']
 
@@ -31,7 +29,7 @@ class ElasticsearchIndexIngesterITSpec extends Specification {
 
         esClient = es.getRestHighLevelClient("cmcheung-centos-7.ra.intel.com", 9200,
                 "elkrest", "elkdefault")
-        dsClientFactory.createHWInvApi() >> new VoltHWInvDbApi(logger, util, voltDbServers)
+        dsClientFactory.createHWInvApi() >> new VoltHWInvDbApi(logger, voltDbServers)
     }
 
     def cleanup() {
@@ -79,7 +77,6 @@ class ElasticsearchIndexIngesterITSpec extends Specification {
 
 class RawNodeInventoryIngesterITSpec extends Specification {
     RawNodeInventoryIngester ts
-    HWInvUtil util = new HWInvUtilImpl(Mock(Logger))
     Logger logger = Mock(Logger)
     DataStoreFactory dsClientFactory = Mock(DataStoreFactory)
     String[] servers = ['css-centos-8-00.ra.intel.com']
@@ -88,7 +85,7 @@ class RawNodeInventoryIngesterITSpec extends Specification {
         println Helper.testStartMessage(specificationContext)
         "./src/integration/resources/scripts/drop_inventory_data.sh".execute().text
 
-        dsClientFactory.createHWInvApi() >> new VoltHWInvDbApi(logger, util, servers)
+        dsClientFactory.createHWInvApi() >> new VoltHWInvDbApi(logger, servers)
         dsClientFactory.createInventoryTrackingApi() >> Mock(InventoryTrackingApi)
 
         ts = new RawNodeInventoryIngester(dsClientFactory, logger)

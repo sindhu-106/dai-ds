@@ -7,7 +7,6 @@ package com.intel.dai.dsimpl.voltdb;
 import com.google.gson.Gson;
 import com.intel.dai.dsapi.HWInvDbApi;
 import com.intel.dai.dsapi.HWInvHistoryEvent;
-import com.intel.dai.dsapi.HWInvUtil;
 import com.intel.dai.dsapi.pojo.Dimm;
 import com.intel.dai.dsapi.pojo.FruHost;
 import com.intel.dai.dsapi.pojo.NodeInventory;
@@ -33,7 +32,7 @@ import java.util.Map;
  */
 public class VoltHWInvDbApi implements HWInvDbApi {
 
-    public VoltHWInvDbApi(Logger logger, HWInvUtil util, String[] servers) {
+    public VoltHWInvDbApi(Logger logger, String[] servers) {
         this.logger = logger;
         this.servers = servers;
     }
