@@ -13,7 +13,7 @@ You can specify the Logger implementation by using the key `logProvider` at the 
   ...
 }
 ```
-or
+or the recommended...
 ```json
 {
   "logProvider": "console",
@@ -57,7 +57,7 @@ When raw data is received over the network transport then it must be normalized 
 
 The class implementation must implement the interface *NetworkListenerProvider*. The implementation must only ever throw *NetworkListenerProviderException*. The constructor should never throw an exception. The logger is available because it was passed into the required constructor.
 
-implement the method *List<CommonDataFormat> processRawStringData(String data, NetworkListenerConfig config)* to do the transformation.
+Implement the method *List<CommonDataFormat> processRawStringData(String data, NetworkListenerConfig config)* to do the transformation.
 
 ### 4.2 Acting on Transformed Data
 After the data is normalized the *dai_network_listener* does not understand specifically how to process the data. So the *dai_network_listener* implements a interface exposing all possible calls into the tier1, tier2, and tier3 data stores as well as publishing data to rabbitmq. This interface along with the processed data is passed into the *NetworkListenerProvider* implementation for processing. The method *actOnData* is called. This provider will perform actions which includes storing data, firing RAS events, and/or data aggregation.
@@ -147,7 +147,7 @@ The name field of this type is always “sse”. The requestBuilderSelectors sec
 }
 ...
 ```
-### 6.2 HTTP Callback Subscriptions (REST servers)
+### 6.2 HTTP Callback Subscriptions (REST servers) (DEPRECATED)
 The name field of this type is always `http_callback`.  More specific information is in the implementation resources so the arguments are small.
 ```json
 ...
@@ -221,7 +221,7 @@ This lists the types of subjects provided by this profile. Although it is allowe
 ## *Appendix 1:*  Simple Example File (JSON)
 ```json
 {
-  "logProvider": "log4j2",
+  "logProvider": "console",
   "subjectMap": {
     "telemetry": "EnvironmentalData",
     "inventoryChanges": "InventoryChangeEvent",

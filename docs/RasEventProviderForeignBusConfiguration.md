@@ -1,9 +1,19 @@
-# Configuration for Provider Class RasEventProviderForeignBus #
+# Configuration for Provider Class RasEventProviderForeignBus and RasEventProviderHPCM#
 ## Provider full Classname: __com.intel.dai.monitoring.RasEventProviderForeignBus__ ##
+## Provider full Classname: __com.intel.dai.monitoring.RasEventProviderHPCM__ ##
 ## Example: ##
 ```json
 "providerConfigurations": {
     "com.intel.dai.monitoring.RasEventProviderForeignBus": {
+        "publishTopic": "ucs_ras_event",
+        "publish": true
+    }
+}
+```
+or
+```json
+"providerConfigurations": {
+    "com.intel.dai.monitoring.RasEventProviderHPCM": {
         "publishTopic": "ucs_ras_event",
         "publish": true
     }

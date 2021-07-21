@@ -21,7 +21,9 @@ Travis CI &nbsp;&nbsp;&nbsp;&nbsp;[![Build Status](https://travis-ci.org/unified
 The DAI/DS public GitHub project has been integrated with Travis continuous integration.
 
 All pull requests will be built and tested automatically by Travis.
-
+<br />
+<br />
+<br />
 
 Building Instructions
 =====================
@@ -108,7 +110,9 @@ __NOTE:__ Examine the docker-build/Dockerfile for how it's done for a docker
     ```bash
     $ ./gradlew build
     ```
-
+<br />
+<br />
+<br />
 
 Run Requirements and Install Instructions (Deployment)
 =======================================================
@@ -167,7 +171,7 @@ Packages (.rpm files are shown but there are .deb equivelents if enabled in the 
 <tr><td>dai-hw2-config-{version}.noarch.rpm     </td><td>No<sup><a href="#**">**</a></sup></td><td>This package contains the DAI-DS configuration for hardware configuration #2. Only one configuration can be installed on the DAI-DS host at a time!</td></tr>
 <tr><td>dai-hw3-config-{version}.noarch.rpm     </td><td>No<sup><a href="#**">**</a></sup></td><td>This package contains the DAI-DS configuration for hardware configuration #3. Only one configuration can be installed on the DAI-DS host at a time!</td></tr>
 <tr><td>dai-postgres-schema-{version}.noarch.rpm</td><td>Yes<sup><a href="#***">***</a></sup></td><td>This package contains stuff to populate the postgres schema. It must be installed on the same server with the postgres database install. This need not be the same location as VoltDB or DAI.</td></tr>
-<tr><td>dai-volt-schema-{version}.noarch.rpm    </td><td>Yes<sup><a href="#***">***</a></sup></td><td>This package contains the schema files and loadable JAR files for VoltDB setup. This does not contain the <span style="font-family: monospace; text-decoration: underline">loadVoltDbInitialData.sh</span> script. This is intended to be loaded on the VoltDB server host where the sqlcmd is present after VoltDB install is completed. The <span style="font-family: monospace; text-decoration: underline">loadVoltDbInitialData.sh</span> script can be run from the DAI-DS installed host remotely to populate the schema with initial data.</td></tr>
+<tr><td>dai-aurora-{version}.noarch.rpm    </td><td>Yes</td><td>This package is targeted at a specific system and is not for general public use.</td></tr>
 <tr style="background-color: navy; color: yellow; font-style: italic"><th>EventSim Related</th><th></th><th></th></tr>
 <tr><td>dai-eventsim-server-{version}.noarch.rpm</td><td>No<sup><a href="#**">**</a></sup></td><td>This package contains the EventSim REST server that takes rquests from the EventSim CLI and simulates the target systems behavior wrt telemetry, events, inventory, etc...</td></tr>
 <tr><td>dai-eventsim-cli-{version}.noarch.rpm   </td><td>No<sup><a href="#*">*</a></sup></td><td>This package contains the EventSim CLI for simulating scenarios during simulation. The EventSim configuration RPM must be installed for EventSim to function correctly.</td></tr>
@@ -177,8 +181,11 @@ Packages (.rpm files are shown but there are .deb equivelents if enabled in the 
 <li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="$"></a>$</sup>&nbsp;&nbsp;&nbsp;</span>To enable Debian compatible packages add "systemProp.includeDebianPackages=true" to your ~/.gradle/gradle.properties file and rebuild DAI-DS.</li>
 <li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="*"></a>*</sup>&nbsp;&nbsp;&nbsp;</span>When testing with EventSim or using EventSim for evaluation these must be installed. On a real system voltDB, Postgres, and RabbitMQ servers must manually be installed.</li>
 <li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="**"></a>**</sup>&nbsp;&nbsp;</span>When using Eventsim for trial or testing the EventSim server, EventSim CLI, and EventSim configuration should be installed.</li>
-<li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="***"></a>***</sup>&nbsp;</span>These are not installed on DAI-DS systems unless DAI-DS is also on a host with the Postgres or VoltDB databases.</li>
+<li><span style="font-family: monospace"><sup style="font-weight:bold"><a name="***"></a>***</sup>&nbsp</span>These are not installed on DAI-DS systems unless DAI-DS is also on a host with the Postgres or VoltDB databases.</li>
 </ul>
+<br />
+<br />
+<br />
 
 Use Cases for Installation
 ===========================
@@ -229,7 +236,6 @@ Testing and Evaluation on One Host (Non-Docker and Eventsim)
 <dt style="font-style: italic">Install DAI-DS Packages:</dt>
 <dd><ul style="list-style: none">
 <li>dai-postgres-schema-{version}.noarch.rpm</li>
-<li>dai-volt-schema-{version}.noarch.rpm</li>
 <li>dai-{version}.noarch.rpm</li>
 <li>dai-cli-{version}.noarch.rpm</li>
 <li>dai-eventsim-server-{version}.noarch.rpm</li>
@@ -241,7 +247,6 @@ Testing and Evaluation on One Host (Non-Docker and Eventsim)
 <li>Configure Postgres with users and "dai" database and restart postgres service on your host</li>
 <li>Configure and start RabbitMQ on your host</li>
 <li>Configure and start VoltDB on your host (make sure both locahhost and management IPs on this host are active)</li>
-<li>Populate VoltDB DB by running: <span style="font-family: monospace; font-weight: bold">/opt/ucs/share/for_voltdb/setupVoltDbSchema.sh</span></li>
 <li>Populate Postgres DB schema by running: <span style="font-family: monospace; font-weight: bold">/opt/ucs/share/for_postgres/setupInitialPostgresSchema.sh</span></li>
 </ol></dd>
 <dt style="font-style: italic">Start DAI-DS:</dt>
@@ -265,10 +270,8 @@ This procedure assumes you have a configuration for you machine layout already d
 <dt style="font-style: italic">Install and Setup <b>voltdb</b> Host:</dt>
 <dd><ol>
 <li>Install VoltDB 9.2.* on this host</li>
-<li>Install <b>dai-volt-schema-{version}.noarch.rpm</b> on this host</li>
 <li>Install <b>my-config.noarch.rpm</b> on this host</li>
 <li>Configure and start VoltDB on this host (make sure both locahhost and management IPs on this host are active)</li>
-<li>Populate VoltDB DB by running: <span style="font-family: monospace; font-weight: bold">/opt/ucs/share/for_voltdb/setupVoltDbSchema.sh</span></li>
 </ol></dd>
 <dt style="font-style: italic">Install <b>rabbitmq</b> Host:</dt>
 <dd><ol>
@@ -293,7 +296,7 @@ This procedure assumes you have a configuration for you machine layout already d
 
 Checking for Running DAI Components:
 -------------------------------------
-If your host system has the Java JDK 8 or newer installed (JRE alone is not enough) then there is an included
+If your host system has the Java JDK 11 or newer installed then there is an included
 script called ___show_adapters___ which will show a detailed list of running DAI-DS java processes. This tool
 must be run as the root user.
 
@@ -312,9 +315,12 @@ Log output in either execution case will be in:
 Uninstalling DAI and Third Party Components:
 --------------------------------------------
 Since all DAI-DS components are RPMs (or debian packages) use the normal method of uninstallation for your distribution. Please not that all services will be stopped gracefully during uninstallation. Log files will remain in the /opt/ucs.** tree.
+<br />
+<br />
+<br />
 
 Notes When Using Docker Containers:
-------------------------------------
+====================================
 * Postgres persistent data is stored in /opt/ucs/docker/tier2/data/pgdata
     + To clear the data and start over do the following as root:
         ```bash
@@ -328,9 +334,12 @@ Notes When Using Docker Containers:
         ```
 * If you start all services together with one command, expect errors and
   restarts of the dai-manager service until all other services are running and setup.
+<br />
+<br />
+<br />
 
-Notes About VoltDB and Huge Memory Pages:
-------------------------------------------
+About VoltDB, Huge Memory Pages, and issues Found:
+===================================================
 * If VoltDB fails to start with an error message about improper setting for huge pages in the kernel then do the following to fix the issue:
     + To fix the immediate problem, as root enter the following 2 commands (will not survive a reboot):
         ```bash
@@ -346,3 +355,39 @@ Notes About VoltDB and Huge Memory Pages:
         ```
         3. Now on reboot, the kernel values will be set correctly for VoltDB.
 
+VoltDB Issues Found:
+---------------------
+This document contains information and links to information about issues encountered with VoltDB, the current online tier implementation. Currently for the docker deployment model, version 9.2.1 is being used.
+
+### Large Queries ###
+* __Issue:__ When a exceptionally large query is made to VoltDB the query could fail causing DAI-DS to fail.
+* __VoltDB version <  9.1:__ A query cannot exceed 50MB as a result size.
+* __VoltDB version >= 9.1:__ A query cannot exceed 50% of the heap size.
+* __Where Found in DAI-DS:__ During benchmarking, after inserting 1,000,0000 RAS events in a burst the AdapterRasForeignBus adapter did a query that failed in the described way.
+* __Release Notes:__ [VoltDB Release Notes](https://docs.voltdb.com/ReleaseNotes/) (Section 5 for release 9.1, subsection 5.5)
+* __Mitigation:__ Set the environment variable ___MP_MAX_TOTAL_RESP_SIZE___ to a percentage of the heap. Please read the linked documentation first!
+<br />
+<br />
+<br />
+
+Other Documentation
+====================
+This section contains links to file in the _docs/_ folder of this repo.
+* [The DAI/DS CLI Users Guide](docs/UCSCommandLineUserGuide.md)
+
+* [Database Configuration](docs/DatabaseConnectionConfiguration.md)
+
+* Monitoring
+    + [Understanding Monitoring and Configuration](docs/UnderstandingDaiNetworkListenerConfigurations.md)
+    + [Environmental Specific Configuration](docs/EnvironmentalProviderForeignBusConfiguration.md)
+    + [Environmental Specific Configuration](docs/EnvironmentalProviderForeignBusConfiguration.md)
+
+* Simulation
+    + [Simulation Setup and Usage](docs/SimulationSetupAndUsage.md)
+    + [Simulation Command Line Interface](docs/SimulationCLISetupAndUsage.md)
+
+* [Resource Management Configuration](docs/WLMAdapterForeignBusConfiguration.md)
+
+* [Provisioner Configuration](docs/ProviderProvisionerNetworkForeignBusConfiguration.md)
+
+* [Inventory Configuration](docs/ProviderInventoryNetworkForeignBusConfiguration.md)
