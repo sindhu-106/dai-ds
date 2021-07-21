@@ -1,0 +1,29 @@
+{
+  "sudo_ssh": false,
+  "display-summary": false,
+  "package_name": "dai-aurora",
+  "adapters" : {
+    "dai1": [
+      "com.intel.dai.AdapterDaiMgr",
+      "com.intel.dai.AdapterOnlineTierVolt",
+      "com.intel.dai.AdapterNearlineTierJdbc",
+      "com.intel.dai.inventory.ProviderInventoryNetworkForeignBus"
+      "com.intel.dai.ui.AdapterUIRest",
+      "com.intel.dai.ras.AdapterRas",
+      "com.intel.dai.provisioners.ProviderProvisionerNetworkForeignBus",
+      "com.intel.dai.monitoring.ProviderMonitoringNetworkForeignBus",
+      "com.intel.dai.monitoring.ProviderMonitoringNetworkForeignBus",
+      "com.intel.dai.resource_managers.cobalt.AdapterWlmCobalt"
+    ]
+  },
+  "cli" : [ "dai1" ],
+  "volt": "dai1",
+  "rabbitmq": "dai1",
+  "postgres": {
+    "url": "localhost",
+    "db": "dai",
+    "port": 5432,
+    "username": "dai",
+    "password": "123@dai"
+  }
+}

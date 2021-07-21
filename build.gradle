@@ -1707,6 +1707,11 @@ exit \$?
         into(bin_dir)
         fileMode = 0755
     }
+    // Health Check
+    from ("${projectDir}/scripts/health_check") {
+        into(bin_dir)
+        fileMode = 0755
+    }
 
     link("/usr/bin/show-adapters", "${bin_dir}/show-adapters")
 }
@@ -1831,6 +1836,11 @@ exit \$?
     }
     // Misc.
     from("${buildDir}/tmp/show-adapters") {
+        into(bin_dir)
+        fileMode = 0755
+    }
+    // Health Check
+    from ("${projectDir}/scripts/health_check") {
         into(bin_dir)
         fileMode = 0755
     }
@@ -1980,6 +1990,11 @@ exit \$?
         into(etc_dir)
         rename('runtime-requirements.txt', 'requirements.txt')
     }
+    // Health Check
+    from ("${projectDir}/scripts/health_check") {
+        into(bin_dir)
+        fileMode = 0755
+    }
 
     link("/usr/bin/show-adapters", "${bin_dir}/show-adapters")
 }
@@ -2125,6 +2140,11 @@ exit \$?
     from("${projectDir}/cli/runtime-requirements.txt") {
         into(etc_dir)
         rename('runtime-requirements.txt', 'requirements.txt')
+    }
+    // Health Check
+    from ("${projectDir}/scripts/health_check") {
+        into(bin_dir)
+        fileMode = 0755
     }
 
     link("/usr/bin/show-adapters", "${bin_dir}/show-adapters")

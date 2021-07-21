@@ -1,0 +1,32 @@
+{
+  "sudo_ssh": false,
+  "display-summary": true,
+  "package_name": "dai",
+  "adapters" : {
+    "am01-nmn.local": [
+      "com.intel.dai.AdapterDaiMgr",
+      "com.intel.dai.AdapterOnlineTierVolt",
+      "com.intel.dai.AdapterNearlineTierJdbc",
+      "com.intel.dai.inventory.ProviderInventoryNetworkForeignBus"
+      "com.intel.dai.ui.AdapterUIRest",
+      "com.intel.dai.ras.AdapterRas",
+      "com.intel.dai.provisioners.ProviderProvisionerNetworkForeignBus",
+      "com.intel.dai.monitoring.ProviderMonitoringNetworkForeignBus",
+      "com.intel.dai.monitoring.ProviderMonitoringNetworkForeignBus",
+      "com.intel.dai.resource_managers.cobalt.AdapterWlmCobalt",
+      "com.intel.dai.fabric.FabricTelemetryProvider",
+      "com.intel.dai.fabric.FabricPerfTelemetryProvider",
+      "com.intel.dai.fabric.FabricCritTelemetryProvider"
+    ]
+  },
+  "cli" : [ "am01-nmn.local" ],
+  "volt": "am01-nmn.local",
+  "rabbitmq": "am01-nmn.local",
+  "postgres": {
+    "url": "am01-nmn.local",
+    "db": "dai",
+    "port": 5432,
+    "username": "dai",
+    "password": "123@dai"
+  }
+}
