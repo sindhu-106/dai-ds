@@ -98,8 +98,7 @@ public class NetworkListenerProviderForeignBus implements NetworkListenerProvide
     }
 
     private CommonDataFormat processHeartbeatMessage(PropertyMap heartbeatLogData) throws Exception {
-        final String timestamp = getHBTimeStamp(heartbeatLogData);
-        final long nsTimestamp = TimeUtils.getNsTimestamp() - Long.parseLong(timestamp) * 1000000;
+        final long nsTimestamp = getHBTimeStamp(heartbeatLogData);
         final String hostname = getHBNode(heartbeatLogData);
 
         final BootState bootState = getHBNodeState(heartbeatLogData);
@@ -199,13 +198,10 @@ public class NetworkListenerProviderForeignBus implements NetworkListenerProvide
         return getNodeState(state);
     }
 
-    private String getHBTimeStamp(PropertyMap data) throws Exception {
-        if(!data.containsKey("uptime"))
-            throw new Exception("Received data is missing 'uptime' " + data);
-        final PropertyMap hostData = data.getMapOrDefault("uptime", new PropertyMap());
-        if(!hostData.containsKey("long"))
-            return "0";
-        return hostData.getString("long");
+    private long getHBTimeStamp(PropertyMap data) throws Exception {
+        if(!data.containsKey("timestamp"))
+            throw new Exception("Received data is missing 'timestamp' " + data);
+        return data.getLong("timestamp");
     }
 
     private String getPowerServiceTimeStamp(PropertyMap data) throws Exception {
